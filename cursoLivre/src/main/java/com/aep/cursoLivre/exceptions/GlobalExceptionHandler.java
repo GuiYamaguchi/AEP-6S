@@ -5,11 +5,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-/**
- * Intercepta exceções lançadas por qualquer @RestController da aplicação
- * e as converte em respostas HTTP padronizadas (ErrorResponse), com o
- * status code apropriado para cada tipo de erro.
- */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 

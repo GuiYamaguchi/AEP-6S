@@ -51,7 +51,7 @@ public class CursoService {
             throw new BadRequestException("Os dados do curso não podem ser nulos.");
         }
 
-        CursoModel cursoExistente = buscarPorId(id); // já lança ResourceNotFoundException se não existir
+        CursoModel cursoExistente = buscarPorId(id);
 
         cursoExistente.setNome(cursoAtualizado.getNome());
         cursoExistente.setInstituicao(cursoAtualizado.getInstituicao());
@@ -67,7 +67,7 @@ public class CursoService {
     }
 
     public void deletarCurso(String id) {
-        CursoModel curso = buscarPorId(id); // já lança ResourceNotFoundException se não existir
+        CursoModel curso = buscarPorId(id);
 
         try {
             cursoRepository.delete(curso);

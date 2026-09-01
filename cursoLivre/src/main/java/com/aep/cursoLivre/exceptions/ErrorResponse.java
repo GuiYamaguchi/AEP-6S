@@ -2,9 +2,6 @@ package com.aep.cursoLivre.exceptions;
 
 import java.time.Instant;
 
-/**
- * Formato padronizado de corpo de resposta para erros retornados pela API.
- */
 public class ErrorResponse {
 
     private final String timestamp;
