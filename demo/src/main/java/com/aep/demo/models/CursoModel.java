@@ -5,12 +5,14 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
-@Document(collection = "alunos")
-public class AlunoModel {
+@Document(collection = "cursos")
+public class CursoModel {
 
     @Id
     private Long id;
     private String nome;
-    private String senha;
+    private String instituicao;
+    private String categoria;
+    private int cargaHoraria;
 
 }
