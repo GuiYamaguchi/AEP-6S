@@ -1,7 +1,7 @@
-package com.aep.demo.controllers;
+package com.aep.cursoLivre.controllers;
 
-import com.aep.demo.models.CursoModel;
-import com.aep.demo.services.CursoService;
+import com.aep.cursoLivre.models.CursoModel;
+import com.aep.cursoLivre.services.CursoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 

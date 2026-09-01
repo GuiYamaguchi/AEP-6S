@@ -1,6 +1,6 @@
-package com.aep.demo.services;
+package com.aep.cursoLivre.services;
 
-import com.aep.demo.models.CursoModel;
+import com.aep.cursoLivre.models.CursoModel;
 
 import java.util.Optional;
 

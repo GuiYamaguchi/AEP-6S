@@ -1,8 +1,8 @@
-package com.aep.demo.services.impl;
+package com.aep.cursoLivre.services.impl;
 
-import com.aep.demo.models.CursoModel;
-import com.aep.demo.repositories.CursoRepository;
-import com.aep.demo.services.CursoService;
+import com.aep.cursoLivre.models.CursoModel;
+import com.aep.cursoLivre.repositories.CursoRepository;
+import com.aep.cursoLivre.services.CursoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

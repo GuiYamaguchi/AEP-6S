@@ -1,4 +1,4 @@
-package com.aep.demo.models;
+package com.aep.cursoLivre.models;
 
 import lombok.Data;
 import org.springframework.data.annotation.Id;
