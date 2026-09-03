@@ -34,6 +34,15 @@ public class CursoService {
                 .orElseThrow(() -> new ResourceNotFoundException("Curso não encontrado com o ID: " + id));
     }
 
+    public CursoModel buscarPorCursoId(Long cursoId) {
+        if (cursoId == null) {
+            throw new BadRequestException("O cursoId não pode ser nulo.");
+        }
+
+        return cursoRepository.findByCursoId(cursoId)
+                .orElseThrow(() -> new ResourceNotFoundException("Curso não encontrado com o cursoId: " + cursoId));
+    }
+
     public CursoModel criarCurso(CursoModel curso) {
         if (curso == null) {
             throw new BadRequestException("Os dados do curso não podem ser nulos.");
@@ -46,12 +55,12 @@ public class CursoService {
         }
     }
 
-    public CursoModel atualizarCurso(String id, CursoModel cursoAtualizado) {
+    public CursoModel atualizarCurso(Long id, CursoModel cursoAtualizado) {
         if (cursoAtualizado == null) {
             throw new BadRequestException("Os dados do curso não podem ser nulos.");
         }
 
-        CursoModel cursoExistente = buscarPorId(id);
+        CursoModel cursoExistente = buscarPorCursoId(id);
 
         cursoExistente.setNome(cursoAtualizado.getNome());
         cursoExistente.setInstituicao(cursoAtualizado.getInstituicao());

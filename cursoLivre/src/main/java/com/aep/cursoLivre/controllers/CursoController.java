@@ -23,6 +23,12 @@ public class CursoController {
     }
 
     @GetMapping("/{id}")
+    public ResponseEntity<CursoModel> buscarPorCursoId(@PathVariable Long id) {
+        CursoModel curso = cursoService.buscarPorCursoId(id);
+        return ResponseEntity.ok(curso);
+    }
+
+    @GetMapping("/mongo/{id}")
     public ResponseEntity<CursoModel> buscarPorId(@PathVariable String id) {
         CursoModel curso = cursoService.buscarPorId(id);
         return ResponseEntity.ok(curso);
@@ -36,7 +42,7 @@ public class CursoController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CursoModel> atualizarCurso(@PathVariable String id, @RequestBody CursoModel curso) {
+    public ResponseEntity<CursoModel> atualizarCurso(@PathVariable Long id, @RequestBody CursoModel curso) {
         CursoModel cursoAtualizado = cursoService.atualizarCurso(id, curso);
         return ResponseEntity.ok(cursoAtualizado);
     }
