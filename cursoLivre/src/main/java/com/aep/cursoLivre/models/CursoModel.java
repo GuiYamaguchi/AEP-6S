@@ -14,6 +14,7 @@ public class CursoModel {
 
     @Id
     private String id;
+    private Long cursoId;
     private String nome;
     private String instituicao;
     private String categoria;
