@@ -16,6 +16,8 @@ import java.util.List;
 public class CursoService {
 
     private final CursoRepository cursoRepository;
+    private final GeradorSequencialService geradorSequencialService;
+    private static final String CURSO_SEQUENCE = "curso_sequence";
 
     public List<CursoModel> listarCursos() {
         try {
@@ -48,6 +50,8 @@ public class CursoService {
             throw new BadRequestException("Os dados do curso não podem ser nulos.");
         }
 
+        curso.setCursoId(geradorSequencialService.generateSequence(CURSO_SEQUENCE));
+
         try {
             return cursoRepository.save(curso);
         } catch (DataAccessException e) {
@@ -75,8 +79,8 @@ public class CursoService {
         }
     }
 
-    public void deletarCurso(String id) {
-        CursoModel curso = buscarPorId(id);
+    public void deletarCurso(Long id) {
+        CursoModel curso = buscarPorCursoId(id);
 
         try {
             cursoRepository.delete(curso);
