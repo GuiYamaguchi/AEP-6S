@@ -20,5 +20,6 @@ public class CursoModel {
     private String categoria;
     private int cargaHoraria;
     private String link;
+    private Long professorId;
 
 }
