@@ -12,8 +12,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Document(collection = "professores")
-public class ProfessorModel {
-
+public class ProfessorModel{
     @Id
     private String id;
 
