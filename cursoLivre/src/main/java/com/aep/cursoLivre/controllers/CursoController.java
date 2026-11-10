@@ -20,6 +20,8 @@ public class CursoController {
 
     private final CursoService cursoService;
 
+    // lISTA TODOS OS CUROS
+
     @Operation(description = "Lista todos os cursos")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Todos os cursos são listados"),
@@ -34,6 +36,8 @@ public class CursoController {
         return ResponseEntity.ok(cursos);
     }
 
+    // BUSCAR PELO CURSO ID
+
     @Operation(description = "Busca o curso pelo seu cursoId")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Retorna o curso"),
@@ -45,6 +49,8 @@ public class CursoController {
         return ResponseEntity.ok(CursoDTO.fromModel(curso));
     }
 
+    // BUSCAR POR ID MONGO
+
     @Operation(description = "Busca o curso pelo seu id")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Retorna o curso"),
@@ -55,6 +61,8 @@ public class CursoController {
         CursoModel curso = cursoService.buscarPorId(id);
         return ResponseEntity.ok(CursoDTO.fromModel(curso));
     }
+
+    //CRIAR
 
     @Operation(description = "Chamada para criar curso")
     @ApiResponses(value = {
@@ -68,6 +76,8 @@ public class CursoController {
         return ResponseEntity.created(location).body(CursoDTO.fromModel(novoCurso));
     }
 
+    //ATUALIZAR
+
     @Operation(description = "Chamada para atualizar credenciais de um curso")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Curso atualizado com sucesso"),
@@ -78,6 +88,8 @@ public class CursoController {
         CursoModel cursoAtualizado = cursoService.atualizarCurso(cursoId, cursoDTO.toModel());
         return ResponseEntity.ok(CursoDTO.fromModel(cursoAtualizado));
     }
+
+    // DELETAR
 
     @Operation(description = "Chamada para deletar um curso")
     @ApiResponses(value = {
