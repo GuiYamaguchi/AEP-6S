@@ -1,3 +1,4 @@
+
 package com.aep.cursoLivre.dtos;
 
 import com.aep.cursoLivre.models.CursoModel;
@@ -9,7 +10,8 @@ public record CursoDTO(
         String instituicao,
         String categoria,
         int cargaHoraria,
-        String link
+        String link,
+        Long professorId
 ) {
 
     public static CursoDTO fromModel(CursoModel curso) {
@@ -24,7 +26,8 @@ public record CursoDTO(
                 curso.getInstituicao(),
                 curso.getCategoria(),
                 curso.getCargaHoraria(),
-                curso.getLink()
+                curso.getLink(),
+                curso.getProfessorId()
         );
     }
 
@@ -36,6 +39,7 @@ public record CursoDTO(
         curso.setCategoria(categoria);
         curso.setCargaHoraria(cargaHoraria);
         curso.setLink(link);
+        curso.setProfessorId(professorId);
 
         return curso;
     }
