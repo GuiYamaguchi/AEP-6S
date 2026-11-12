@@ -17,6 +17,7 @@ class CursoDTOTest {
         model.setCategoria("Qualidade de Software");
         model.setCargaHoraria(20);
         model.setLink("http://exemplo.com/junit");
+        model.setProfessorId(4L);
 
         CursoDTO dto = CursoDTO.fromModel(model);
 
@@ -27,6 +28,7 @@ class CursoDTOTest {
         assertThat(dto.categoria()).isEqualTo(model.getCategoria());
         assertThat(dto.cargaHoraria()).isEqualTo(model.getCargaHoraria());
         assertThat(dto.link()).isEqualTo(model.getLink());
+        assertThat(dto.professorId()).isEqualTo(model.getProfessorId());
     }
 
     @Test
@@ -43,7 +45,8 @@ class CursoDTOTest {
                 "Alura",
                 "Qualidade de Software",
                 20,
-                "http://exemplo.com/junit"
+                "http://exemplo.com/junit",
+                4L
         );
 
         CursoModel model = dto.toModel();
@@ -53,5 +56,17 @@ class CursoDTOTest {
         assertThat(model.getCategoria()).isEqualTo(dto.categoria());
         assertThat(model.getCargaHoraria()).isEqualTo(dto.cargaHoraria());
         assertThat(model.getLink()).isEqualTo(dto.link());
+        assertThat(model.getProfessorId()).isEqualTo(dto.professorId());
+    }
+
+    @Test
+    void toModelNaoDeveCopiarIdsGeradosPeloSistema() {
+        CursoDTO dto = new CursoDTO(
+                "id-do-cliente", 99L, "Curso", "Inst", "Cat", 10, "http://link", 1L);
+
+        CursoModel model = dto.toModel();
+
+        assertThat(model.getId()).isNull();
+        assertThat(model.getCursoId()).isNull();
     }
 }

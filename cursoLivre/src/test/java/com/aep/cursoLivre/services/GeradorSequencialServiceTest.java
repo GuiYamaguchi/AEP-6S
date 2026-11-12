@@ -4,6 +4,7 @@ import com.aep.cursoLivre.models.DatabaseSequenceModel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
@@ -14,6 +15,7 @@ import org.springframework.data.mongodb.core.query.Update;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -59,5 +61,28 @@ class GeradorSequencialServiceTest {
         long resultado = geradorSequencialService.generateSequence("curso_sequence");
 
         assertThat(resultado).isEqualTo(1L);
+    }
+
+    @Test
+    void deveIncrementarOContadorPeloNomeDaSequencia() {
+        DatabaseSequenceModel counter = new DatabaseSequenceModel("aluno_sequence", 1L);
+
+        when(mongoOperations.findAndModify(
+                any(Query.class),
+                any(Update.class),
+                any(FindAndModifyOptions.class),
+                eq(DatabaseSequenceModel.class)))
+                .thenReturn(counter);
+
+        geradorSequencialService.generateSequence("aluno_sequence");
+
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+        verify(mongoOperations).findAndModify(
+                queryCaptor.capture(),
+                any(Update.class),
+                any(FindAndModifyOptions.class),
+                eq(DatabaseSequenceModel.class));
+
+        assertThat(queryCaptor.getValue().getQueryObject().get("_id")).isEqualTo("aluno_sequence");
     }
 }
