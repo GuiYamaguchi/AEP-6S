@@ -121,16 +121,5 @@ public class ProfessorService {
         }
     }
 
-    private void validarProfessor(Long professorId) {
 
-        if (professorId == null) {
-            throw new BadRequestException(
-                    "O professorId é obrigatório.");
-        }
-
-        if (professorRepository.findByProfessorId(professorId).isEmpty()) {
-            throw new ResourceNotFoundException(
-                    "Professor não encontrado: " + professorId);
-        }
-    }
 }
