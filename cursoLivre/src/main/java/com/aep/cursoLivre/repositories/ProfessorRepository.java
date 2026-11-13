@@ -11,5 +11,4 @@ public interface ProfessorRepository
 
     Optional<ProfessorModel> findByProfessorId(Long professorId);
 
-    Optional<ProfessorModel> findByEmail(String email);
 }

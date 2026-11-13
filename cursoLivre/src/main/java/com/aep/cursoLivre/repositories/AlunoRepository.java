@@ -11,5 +11,4 @@ public interface AlunoRepository
 
     Optional<AlunoModel> findByAlunoId(Long alunoId);
 
-    Optional<AlunoModel> findByEmail(String email);
 }
