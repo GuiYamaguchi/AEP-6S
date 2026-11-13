@@ -9,21 +9,36 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataAccessResourceFailureException;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class CursoServiceTest {
+
+    private static final String ID = "64f1c2b2a1b2c3d4e5f6a7b8";
 
     @Mock
     private CursoRepository cursoRepository;
@@ -38,16 +53,44 @@ class CursoServiceTest {
     @BeforeEach
     void setUp() {
         cursoService = new CursoService(cursoRepository, geradorSequencialService);
-
-        curso = new CursoModel();
-        curso.setId("64f1c2b2a1b2c3d4e5f6a7b8");
-        curso.setCursoId(1L);
-        curso.setNome("Java para Iniciantes");
-        curso.setInstituicao("Alura");
-        curso.setCategoria("Programacao");
-        curso.setCargaHoraria(40);
-        curso.setLink("http://exemplo.com/curso");
+        curso = cursoValido();
     }
+
+    private static CursoModel cursoValido() {
+        CursoModel c = new CursoModel();
+        c.setId(ID);
+        c.setCursoId(1L);
+        c.setNome("Java para Iniciantes");
+        c.setInstituicao("Alura");
+        c.setCategoria("Programacao");
+        c.setCargaHoraria(40);
+        c.setLink("http://exemplo.com/curso");
+        c.setProfessorId(5L);
+        return c;
+    }
+
+    /** Cada argumento: descricao, alteracao que invalida o curso, trecho esperado na mensagem. */
+    static Stream<Arguments> cursosInvalidos() {
+        return Stream.of(
+                invalido("nome nulo", c -> c.setNome(null), "nome do curso"),
+                invalido("nome vazio", c -> c.setNome(""), "nome do curso"),
+                invalido("nome em branco", c -> c.setNome("   "), "nome do curso"),
+                invalido("instituicao nula", c -> c.setInstituicao(null), "institui"),
+                invalido("instituicao vazia", c -> c.setInstituicao(" "), "institui"),
+                invalido("categoria nula", c -> c.setCategoria(null), "categoria"),
+                invalido("categoria vazia", c -> c.setCategoria(" "), "categoria"),
+                invalido("carga horaria zero", c -> c.setCargaHoraria(0), "carga hor"),
+                invalido("carga horaria negativa", c -> c.setCargaHoraria(-10), "carga hor"),
+                invalido("link nulo", c -> c.setLink(null), "link"),
+                invalido("link vazio", c -> c.setLink(" "), "link")
+        );
+    }
+
+    private static Arguments invalido(String descricao, Consumer<CursoModel> alteracao, String mensagem) {
+        return Arguments.of(descricao, alteracao, mensagem);
+    }
+
+    // ------------------------------------------------------------------ listar
 
     @Nested
     class ListarCursos {
@@ -69,9 +112,12 @@ class CursoServiceTest {
 
             assertThatThrownBy(() -> cursoService.listarCursos())
                     .isInstanceOf(ServiceException.class)
-                    .hasMessageContaining("Erro ao buscar a lista de cursos");
+                    .hasMessageContaining("Erro ao listar")
+                    .hasCauseInstanceOf(DataAccessResourceFailureException.class);
         }
     }
+
+    // ------------------------------------------------------------- buscarPorId
 
     @Nested
     class BuscarPorId {
@@ -85,17 +131,14 @@ class CursoServiceTest {
             assertThat(resultado).isEqualTo(curso);
         }
 
-        @Test
-        void deveLancarBadRequestQuandoIdForNulo() {
-            assertThatThrownBy(() -> cursoService.buscarPorId(null))
+        @ParameterizedTest
+        @NullAndEmptySource
+        @ValueSource(strings = {" ", "   "})
+        void deveLancarBadRequestQuandoIdForInvalido(String id) {
+            assertThatThrownBy(() -> cursoService.buscarPorId(id))
                     .isInstanceOf(BadRequestException.class);
-            verifyNoInteractions(cursoRepository);
-        }
 
-        @Test
-        void deveLancarBadRequestQuandoIdForVazio() {
-            assertThatThrownBy(() -> cursoService.buscarPorId("   "))
-                    .isInstanceOf(BadRequestException.class);
+            verifyNoInteractions(cursoRepository);
         }
 
         @Test
@@ -106,7 +149,19 @@ class CursoServiceTest {
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("xyz");
         }
+
+        @Test
+        void deveLancarServiceExceptionQuandoRepositorioFalhar() {
+            when(cursoRepository.findById("abc"))
+                    .thenThrow(new DataAccessResourceFailureException("falha"));
+
+            assertThatThrownBy(() -> cursoService.buscarPorId("abc"))
+                    .isInstanceOf(ServiceException.class)
+                    .hasMessageContaining("Erro ao buscar");
+        }
     }
+
+    // -------------------------------------------------------- buscarPorCursoId
 
     @Nested
     class BuscarPorCursoId {
@@ -120,10 +175,13 @@ class CursoServiceTest {
             assertThat(resultado).isEqualTo(curso);
         }
 
-        @Test
-        void deveLancarBadRequestQuandoCursoIdForNulo() {
-            assertThatThrownBy(() -> cursoService.buscarPorCursoId(null))
+        @ParameterizedTest
+        @NullSource
+        @ValueSource(longs = {0L, -5L})
+        void deveLancarBadRequestQuandoCursoIdForInvalido(Long cursoId) {
+            assertThatThrownBy(() -> cursoService.buscarPorCursoId(cursoId))
                     .isInstanceOf(BadRequestException.class);
+
             verifyNoInteractions(cursoRepository);
         }
 
@@ -135,30 +193,56 @@ class CursoServiceTest {
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("99");
         }
+
+        @Test
+        void deveLancarServiceExceptionQuandoRepositorioFalhar() {
+            when(cursoRepository.findByCursoId(1L))
+                    .thenThrow(new DataAccessResourceFailureException("falha"));
+
+            assertThatThrownBy(() -> cursoService.buscarPorCursoId(1L))
+                    .isInstanceOf(ServiceException.class)
+                    .hasMessageContaining("Erro ao buscar");
+        }
     }
+
+    // ----------------------------------------------------------------- criar
 
     @Nested
     class CriarCurso {
 
         @Test
-        void deveCriarCursoComSucesso() {
-            CursoModel novoCurso = new CursoModel();
-            novoCurso.setNome("Spring Boot Avancado");
+        void deveCriarCursoGerandoOCursoId() {
+            when(geradorSequencialService.generateSequence("curso_sequence")).thenReturn(7L);
+            when(cursoRepository.save(any(CursoModel.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
 
-            when(geradorSequencialService.generateSequence("curso_sequence")).thenReturn(2L);
-            when(cursoRepository.save(any(CursoModel.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            CursoModel resultado = cursoService.criarCurso(curso);
 
-            CursoModel resultado = cursoService.criarCurso(novoCurso);
-
-            assertThat(resultado.getCursoId()).isEqualTo(2L);
+            assertThat(resultado.getCursoId()).isEqualTo(7L);
+            assertThat(resultado.getNome()).isEqualTo("Java para Iniciantes");
             verify(geradorSequencialService).generateSequence("curso_sequence");
-            verify(cursoRepository).save(novoCurso);
+            verify(cursoRepository).save(curso);
         }
 
         @Test
         void deveLancarBadRequestQuandoCursoForNulo() {
             assertThatThrownBy(() -> cursoService.criarCurso(null))
                     .isInstanceOf(BadRequestException.class);
+
+            verifyNoInteractions(cursoRepository, geradorSequencialService);
+        }
+
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.aep.cursoLivre.services.CursoServiceTest#cursosInvalidos")
+        void deveLancarBadRequestQuandoCursoForInvalido(
+                String descricao, Consumer<CursoModel> alteracao, String mensagem) {
+
+            alteracao.accept(curso);
+
+            assertThatThrownBy(() -> cursoService.criarCurso(curso))
+                    .isInstanceOf(BadRequestException.class)
+                    .hasMessageContaining(mensagem);
+
             verifyNoInteractions(cursoRepository, geradorSequencialService);
         }
 
@@ -170,91 +254,162 @@ class CursoServiceTest {
 
             assertThatThrownBy(() -> cursoService.criarCurso(curso))
                     .isInstanceOf(ServiceException.class)
-                    .hasMessageContaining("Erro ao salvar o curso");
+                    .hasMessageContaining("Erro ao cadastrar");
+        }
+
+        @Test
+        void deveLancarServiceExceptionQuandoGerarSequenciaFalhar() {
+            when(geradorSequencialService.generateSequence(anyString()))
+                    .thenThrow(new DataAccessResourceFailureException("erro na sequencia"));
+
+            assertThatThrownBy(() -> cursoService.criarCurso(curso))
+                    .isInstanceOf(ServiceException.class)
+                    .hasMessageContaining("Erro ao cadastrar");
+
+            verify(cursoRepository, never()).save(any());
         }
     }
+
+    // ------------------------------------------------------------- atualizar
 
     @Nested
     class AtualizarCurso {
 
+        private CursoModel dadosAtualizados() {
+            CursoModel dados = new CursoModel();
+            dados.setNome("Novo Nome");
+            dados.setInstituicao("Nova Instituicao");
+            dados.setCategoria("Nova Categoria");
+            dados.setCargaHoraria(80);
+            dados.setLink("http://novo-link.com");
+            return dados;
+        }
+
         @Test
         void deveAtualizarCursoComSucesso() {
-            CursoModel dadosAtualizados = new CursoModel();
-            dadosAtualizados.setNome("Novo Nome");
-            dadosAtualizados.setInstituicao("Nova Instituicao");
-            dadosAtualizados.setCategoria("Nova Categoria");
-            dadosAtualizados.setCargaHoraria(80);
-            dadosAtualizados.setLink("http://novo-link.com");
+            when(cursoRepository.findById(ID)).thenReturn(Optional.of(curso));
+            when(cursoRepository.save(any(CursoModel.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
 
-            when(cursoRepository.findByCursoId(1L)).thenReturn(Optional.of(curso));
-            when(cursoRepository.save(any(CursoModel.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            CursoModel resultado = cursoService.atualizarCurso(ID, dadosAtualizados());
 
-            CursoModel resultado = cursoService.atualizarCurso(1L, dadosAtualizados);
-
+            assertThat(resultado).isSameAs(curso);
             assertThat(resultado.getNome()).isEqualTo("Novo Nome");
             assertThat(resultado.getInstituicao()).isEqualTo("Nova Instituicao");
             assertThat(resultado.getCategoria()).isEqualTo("Nova Categoria");
             assertThat(resultado.getCargaHoraria()).isEqualTo(80);
             assertThat(resultado.getLink()).isEqualTo("http://novo-link.com");
+            assertThat(resultado.getCursoId()).isEqualTo(1L);
+            verify(cursoRepository).save(curso);
+        }
+
+        @ParameterizedTest
+        @NullAndEmptySource
+        @ValueSource(strings = {"  "})
+        void deveLancarBadRequestQuandoIdForInvalido(String id) {
+            assertThatThrownBy(() -> cursoService.atualizarCurso(id, dadosAtualizados()))
+                    .isInstanceOf(BadRequestException.class);
+
+            verifyNoInteractions(cursoRepository);
         }
 
         @Test
         void deveLancarBadRequestQuandoDadosAtualizadosForemNulos() {
-            assertThatThrownBy(() -> cursoService.atualizarCurso(1L, null))
+            assertThatThrownBy(() -> cursoService.atualizarCurso(ID, null))
                     .isInstanceOf(BadRequestException.class);
+
+            verifyNoInteractions(cursoRepository);
+        }
+
+        @Test
+        void deveLancarBadRequestQuandoDadosAtualizadosForemInvalidos() {
+            CursoModel invalido = dadosAtualizados();
+            invalido.setNome(" ");
+
+            assertThatThrownBy(() -> cursoService.atualizarCurso(ID, invalido))
+                    .isInstanceOf(BadRequestException.class)
+                    .hasMessageContaining("nome do curso");
+
             verifyNoInteractions(cursoRepository);
         }
 
         @Test
         void deveLancarResourceNotFoundQuandoCursoNaoExistir() {
-            when(cursoRepository.findByCursoId(1L)).thenReturn(Optional.empty());
+            when(cursoRepository.findById(ID)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> cursoService.atualizarCurso(1L, curso))
-                    .isInstanceOf(ResourceNotFoundException.class);
+            assertThatThrownBy(() -> cursoService.atualizarCurso(ID, dadosAtualizados()))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining(ID);
+
+            verify(cursoRepository, never()).save(any());
+        }
+
+        @Test
+        void deveLancarServiceExceptionQuandoBuscarFalhar() {
+            when(cursoRepository.findById(ID))
+                    .thenThrow(new DataAccessResourceFailureException("erro ao buscar"));
+
+            assertThatThrownBy(() -> cursoService.atualizarCurso(ID, dadosAtualizados()))
+                    .isInstanceOf(ServiceException.class)
+                    .hasMessageContaining("Erro ao atualizar");
         }
 
         @Test
         void deveLancarServiceExceptionQuandoSalvarFalhar() {
-            when(cursoRepository.findByCursoId(1L)).thenReturn(Optional.of(curso));
+            when(cursoRepository.findById(ID)).thenReturn(Optional.of(curso));
             when(cursoRepository.save(any(CursoModel.class)))
                     .thenThrow(new DataAccessResourceFailureException("erro ao atualizar"));
 
-            assertThatThrownBy(() -> cursoService.atualizarCurso(1L, curso))
+            assertThatThrownBy(() -> cursoService.atualizarCurso(ID, dadosAtualizados()))
                     .isInstanceOf(ServiceException.class)
-                    .hasMessageContaining("Erro ao atualizar o curso");
+                    .hasMessageContaining("Erro ao atualizar");
         }
     }
+
+    // --------------------------------------------------------------- deletar
 
     @Nested
     class DeletarCurso {
 
         @Test
         void deveDeletarCursoComSucesso() {
-            when(cursoRepository.findByCursoId(1L)).thenReturn(Optional.of(curso));
+            when(cursoRepository.findById(ID)).thenReturn(Optional.of(curso));
 
-            cursoService.deletarCurso(1L);
+            cursoService.deletarCurso(ID);
 
             verify(cursoRepository).delete(curso);
         }
 
+        @ParameterizedTest
+        @NullAndEmptySource
+        @ValueSource(strings = {"  "})
+        void deveLancarBadRequestQuandoIdForInvalido(String id) {
+            assertThatThrownBy(() -> cursoService.deletarCurso(id))
+                    .isInstanceOf(BadRequestException.class);
+
+            verifyNoInteractions(cursoRepository);
+        }
+
         @Test
         void deveLancarResourceNotFoundQuandoCursoNaoExistir() {
-            when(cursoRepository.findByCursoId(1L)).thenReturn(Optional.empty());
+            when(cursoRepository.findById(ID)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> cursoService.deletarCurso(1L))
-                    .isInstanceOf(ResourceNotFoundException.class);
+            assertThatThrownBy(() -> cursoService.deletarCurso(ID))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining(ID);
+
             verify(cursoRepository, never()).delete(any());
         }
 
         @Test
         void deveLancarServiceExceptionQuandoDeletarFalhar() {
-            when(cursoRepository.findByCursoId(1L)).thenReturn(Optional.of(curso));
+            when(cursoRepository.findById(ID)).thenReturn(Optional.of(curso));
             doThrow(new DataAccessResourceFailureException("erro ao deletar"))
                     .when(cursoRepository).delete(curso);
 
-            assertThatThrownBy(() -> cursoService.deletarCurso(1L))
+            assertThatThrownBy(() -> cursoService.deletarCurso(ID))
                     .isInstanceOf(ServiceException.class)
-                    .hasMessageContaining("Erro ao deletar o curso");
+                    .hasMessageContaining("Erro ao excluir");
         }
     }
 }
